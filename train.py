@@ -333,9 +333,7 @@ def main():
         print()
     finally:
         if step > last_saved_step:
-            if loss_value < minLoss:
-                save(saver, sess, logdir, step)
-                minLoss = loss_value
+            save(saver, sess, logdir, step)
         coord.request_stop()
         coord.join(threads)
 

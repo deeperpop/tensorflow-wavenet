@@ -186,6 +186,9 @@ def validate_directories(args):
 
 
 def main():
+
+    minLoss = float('inf')
+
     args = get_arguments()
 
     try:
@@ -319,8 +322,10 @@ def main():
                   .format(step, loss_value, duration))
 
             if step % args.checkpoint_every == 0:
-                save(saver, sess, logdir, step)
-                last_saved_step = step
+                if loss_value < minLoss:
+                    save(saver, sess, logdir, step)
+                    last_saved_step = step
+                    minLoss = loss_value
 
     except KeyboardInterrupt:
         # Introduce a line break after ^C is displayed so save message
@@ -328,7 +333,9 @@ def main():
         print()
     finally:
         if step > last_saved_step:
-            save(saver, sess, logdir, step)
+            if loss_value < minLoss:
+                save(saver, sess, logdir, step)
+                minLoss = loss_value
         coord.request_stop()
         coord.join(threads)
 

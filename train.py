@@ -266,6 +266,10 @@ def main():
         else:
             gc_id_batch = None
 
+    # Get optional parameters
+    optional_params = {k: v for k, v in wavenet_params.items()
+                       if k in ['activation']}
+
     # Create network.
     net = WaveNetModel(
         batch_size=args.batch_size,
@@ -274,14 +278,14 @@ def main():
         residual_channels=wavenet_params["residual_channels"],
         dilation_channels=wavenet_params["dilation_channels"],
         skip_channels=wavenet_params["skip_channels"],
-        activation=wavenet_params.get("activation"),
         quantization_channels=wavenet_params["quantization_channels"],
         use_biases=wavenet_params["use_biases"],
         scalar_input=wavenet_params["scalar_input"],
         initial_filter_width=wavenet_params["initial_filter_width"],
         histograms=args.histograms,
         global_condition_channels=args.gc_channels,
-        global_condition_cardinality=reader.gc_category_cardinality)
+        global_condition_cardinality=reader.gc_category_cardinality,
+        **optional_params)
 
     if args.l2_regularization_strength == 0:
         args.l2_regularization_strength = None

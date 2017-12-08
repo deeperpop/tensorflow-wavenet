@@ -106,7 +106,7 @@ def get_arguments():
                         help='Number of global condition channels. Default: None. Expecting: Int')
     parser.add_argument('--max_checkpoints', type=int, default=MAX_TO_KEEP,
                         help='Maximum amount of checkpoints that will be kept alive. Default: '
-                             + str(MAX_TO_KEEP) + '.')
+                        + str(MAX_TO_KEEP) + '.')
     return parser.parse_args()
 
 
@@ -274,6 +274,7 @@ def main():
         residual_channels=wavenet_params["residual_channels"],
         dilation_channels=wavenet_params["dilation_channels"],
         skip_channels=wavenet_params["skip_channels"],
+        activation=wavenet_params.get("activation"),
         quantization_channels=wavenet_params["quantization_channels"],
         use_biases=wavenet_params["use_biases"],
         scalar_input=wavenet_params["scalar_input"],

@@ -50,6 +50,7 @@ class WaveNetModel(object):
                  residual_channels,
                  dilation_channels,
                  skip_channels,
+                 activation='GTU',
                  quantization_channels=2**8,
                  use_biases=False,
                  scalar_input=False,
@@ -70,6 +71,8 @@ class WaveNetModel(object):
                 convolution.
             skip_channels: How many filters to learn that contribute to the
                 quantized softmax output.
+            activation: Which activation to use. Either Gated Tanh Unit (`GTU`)
+                or Gated Linear Unit (`GLU`).
             quantization_channels: How many amplitude values to use for audio
                 quantization and the corresponding one-hot encoding.
                 Default: 256 (8-bit quantization).
@@ -100,6 +103,7 @@ class WaveNetModel(object):
         self.filter_width = filter_width
         self.residual_channels = residual_channels
         self.dilation_channels = dilation_channels
+        self.activation = activation
         self.quantization_channels = quantization_channels
         self.use_biases = use_biases
         self.skip_channels = skip_channels
@@ -298,7 +302,10 @@ class WaveNetModel(object):
             conv_filter = tf.add(conv_filter, filter_bias)
             conv_gate = tf.add(conv_gate, gate_bias)
 
-        out = tf.tanh(conv_filter) * tf.sigmoid(conv_gate)
+        if self.activation == 'GTU':
+            out = tf.tanh(conv_filter) * tf.sigmoid(conv_gate)
+        elif self.activation == 'GLU':
+            out = conv_filter * tf.sigmoid(conv_gate)
 
         # The 1x1 conv to produce the residual output
         weights_dense = variables['dense']

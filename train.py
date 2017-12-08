@@ -297,7 +297,7 @@ def main():
     # Perform gradient clipping if requested
     if args.gradient_clipping == GRADIENT_CLIPPING:
         # By default, don't perform clipping
-        optim = optimizer.minimize(loss, var_list=trainables)
+        optim = optimizer.minimize(loss, var_list=trainable)
     else:
         # Perform clipping
         optim = minimize_clipped(optimizer, loss, args.gradient_clipping,

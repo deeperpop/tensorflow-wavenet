@@ -29,6 +29,7 @@ WAVENET_PARAMS = './wavenet_params.json'
 STARTED_DATESTRING = "{0:%Y-%m-%dT%H-%M-%S}".format(datetime.now())
 SAMPLE_SIZE = 100000
 L2_REGULARIZATION_STRENGTH = 0
+GRADIENT_CLIPPING = float('inf')
 SILENCE_THRESHOLD = 0.3
 EPSILON = 0.001
 MOMENTUM = 0.9
@@ -85,6 +86,9 @@ def get_arguments():
                         default=L2_REGULARIZATION_STRENGTH,
                         help='Coefficient in the L2 regularization. '
                         'Default: False')
+    parser.add_argument('--gradient_clipping', type=float,
+                        default=GRADIENT_CLIPPING,
+                        help='Gradient clipping maximum. Default: False')
     parser.add_argument('--silence_threshold', type=float,
                         default=SILENCE_THRESHOLD,
                         help='Volume threshold below which to trim the start '
@@ -185,6 +189,32 @@ def validate_directories(args):
     }
 
 
+def minimize_clipped(optimizer, loss, clip_norm=1, var_list=None):
+    """
+    Uses `optimizer` to minimize `loss` with gradient clipping to
+    (-|`clip`|, |`clip`|) over `var_list`.
+
+    Based on tf.train.Optimizer.minimize.
+    """
+    # Compute gradients
+    grads_and_vars = optimizer.compute_gradients(loss, var_list=var_list)
+
+    # Make sure some variables have gradients
+    vars_with_grad = [v for g, v in grads_and_vars if g is not None]
+    if not vars_with_grad:
+        raise ValueError(
+            "No gradients provided for any variable, check your graph for ops"
+            " that do not support gradients, between variables %s and loss %s." %
+            ([str(v) for _, v in grads_and_vars], loss))
+
+    # Clip gradients
+    gradients, variables = zip(*grads_and_vars)
+    clipped_grads, _ = tf.clip_by_global_norm(gradients, clip_norm)
+    clipped_grads_and_vars = zip(clipped_grads, variables)
+
+    return optimizer.apply_gradients(clipped_grads_and_vars)
+
+
 def main():
     # Get arguments
     args = get_arguments()
@@ -257,11 +287,21 @@ def main():
     loss = net.loss(input_batch=audio_batch,
                     global_condition_batch=gc_id_batch,
                     l2_regularization_strength=args.l2_regularization_strength)
+
+    # Initialize optimizer
     optimizer = optimizer_factory[args.optimizer](
                     learning_rate=args.learning_rate,
                     momentum=args.momentum)
     trainable = tf.trainable_variables()
-    optim = optimizer.minimize(loss, var_list=trainable)
+
+    # Perform gradient clipping if requested
+    if args.gradient_clipping == GRADIENT_CLIPPING:
+        # By default, don't perform clipping
+        optim = optimizer.minimize(loss, var_list=trainables)
+    else:
+        # Perform clipping
+        optim = minimize_clipped(optimizer, loss, args.gradient_clipping,
+                                 var_list=trainable)
 
     # Set up logging for TensorBoard.
     writer = tf.summary.FileWriter(logdir)

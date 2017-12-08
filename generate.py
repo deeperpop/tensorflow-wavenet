@@ -6,8 +6,10 @@ from datetime import datetime
 import json
 import os
 
+import audioread
 import librosa
 import numpy as np
+import scipy
 import tensorflow as tf
 
 from wavenet import WaveNetModel, mu_law_decode, mu_law_encode, audio_reader
@@ -121,7 +123,10 @@ def create_seed(filename,
                 quantization_channels,
                 window_size,
                 silence_threshold=SILENCE_THRESHOLD):
-    audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
+    try:
+        audio, _ = librosa.load(filename, sr=sample_rate, mono=True)
+    except audioread.NoBackendError:
+        _, audio = scipy.io.wavfile.read(filename)
     # audio = audio_reader.trim_silence(audio, silence_threshold)
 
     quantized = mu_law_encode(audio, quantization_channels)

@@ -186,11 +186,10 @@ def validate_directories(args):
 
 
 def main():
-
-    minLoss = float('inf')
-
+    # Get arguments
     args = get_arguments()
 
+    # Validate arguments
     try:
         directories = validate_directories(args)
     except ValueError as e:
@@ -198,6 +197,7 @@ def main():
         print(str(e))
         return
 
+    # Extract argument variables
     logdir = directories['logdir']
     restore_from = directories['restore_from']
 
@@ -205,6 +205,7 @@ def main():
     # if the trained model is written into an arbitrary location.
     is_overwritten_training = logdir != restore_from
 
+    # Load JSON model parameters
     with open(args.wavenet_params, 'r') as f:
         wavenet_params = json.load(f)
 
@@ -294,6 +295,7 @@ def main():
 
     step = None
     last_saved_step = saved_global_step
+    min_loss = float('inf')
     try:
         for step in range(saved_global_step + 1, args.num_steps):
             start_time = time.time()
@@ -322,10 +324,10 @@ def main():
                   .format(step, loss_value, duration))
 
             if step % args.checkpoint_every == 0:
-                if loss_value < minLoss:
+                if loss_value < min_loss:
                     save(saver, sess, logdir, step)
                     last_saved_step = step
-                    minLoss = loss_value
+                    min_loss = loss_value
 
     except KeyboardInterrupt:
         # Introduce a line break after ^C is displayed so save message

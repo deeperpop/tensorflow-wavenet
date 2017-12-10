@@ -31,6 +31,7 @@ SAMPLE_SIZE = 100000
 L2_REGULARIZATION_STRENGTH = 0
 GRADIENT_CLIPPING = float('inf')
 SILENCE_THRESHOLD = 0.3
+NORMALIZE = False
 EPSILON = 0.001
 MOMENTUM = 0.9
 MAX_TO_KEEP = 5
@@ -93,6 +94,9 @@ def get_arguments():
                         default=SILENCE_THRESHOLD,
                         help='Volume threshold below which to trim the start '
                         'and the end from the training set samples. Default: ' + str(SILENCE_THRESHOLD) + '.')
+    parser.add_argument('--normalize', type=float,
+                        default=NORMALIZE,
+                        help='Center and normalize loaded audio to [-1, 1]')
     parser.add_argument('--optimizer', type=str, default='adam',
                         choices=optimizer_factory.keys(),
                         help='Select the optimizer specified by this option. Default: adam.')
@@ -259,7 +263,8 @@ def main():
                                                                    wavenet_params["scalar_input"],
                                                                    wavenet_params["initial_filter_width"]),
             sample_size=args.sample_size,
-            silence_threshold=silence_threshold)
+            silence_threshold=silence_threshold,
+            normalize=args.normalize)
         audio_batch = reader.dequeue(args.batch_size)
         if gc_enabled:
             gc_id_batch = reader.dequeue_gc(args.batch_size)

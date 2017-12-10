@@ -96,6 +96,7 @@ class AudioReader(object):
                  receptive_field,
                  sample_size=None,
                  silence_threshold=None,
+                 normalize=False,
                  queue_size=32):
         self.audio_dir = audio_dir
         self.sample_rate = sample_rate
@@ -103,6 +104,7 @@ class AudioReader(object):
         self.sample_size = sample_size
         self.receptive_field = receptive_field
         self.silence_threshold = silence_threshold
+        self.normalize = normalize
         self.gc_enabled = gc_enabled
         self.threads = []
         self.sample_placeholder = tf.placeholder(dtype=tf.float32, shape=None)
@@ -156,9 +158,12 @@ class AudioReader(object):
         while not stop:
             iterator = load_generic_audio(self.audio_dir, self.sample_rate)
             for audio, filename, category_id in iterator:
+                # Stop if requested
                 if self.coord.should_stop():
                     stop = True
                     break
+
+                # Trim silence if requested
                 if self.silence_threshold is not None:
                     # Remove silence
                     audio = trim_silence(audio[:, 0], self.silence_threshold)
@@ -169,6 +174,12 @@ class AudioReader(object):
                               "threshold, or adjust volume of the audio."
                               .format(filename))
 
+                # Center and normalize audio to [-1, 1]
+                if self.normalize:
+                    audio -= np.mean(audio)
+                    audio /= np.max(np.abs(audio))
+
+                # Add receptive field padding
                 audio = np.pad(audio, [[self.receptive_field, 0], [0, 0]],
                                'constant')
 

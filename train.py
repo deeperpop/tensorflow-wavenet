@@ -94,7 +94,7 @@ def get_arguments():
                         default=SILENCE_THRESHOLD,
                         help='Volume threshold below which to trim the start '
                         'and the end from the training set samples. Default: ' + str(SILENCE_THRESHOLD) + '.')
-    parser.add_argument('--normalize', type=float,
+    parser.add_argument('--normalize', type=bool,
                         default=NORMALIZE,
                         help='Center and normalize loaded audio to [-1, 1]')
     parser.add_argument('--optimizer', type=str, default='adam',
